@@ -37,7 +37,7 @@ class Document(Chunk):
 
     title_embedding: Optional[Vector] = None
     content_embedding: Optional[Vector] = None
-    embedding_model: Optional[Union[str, Callable]] = None
+    embedding_model: Optional[str] = None
     dimensions: Optional[int] = None
 
 

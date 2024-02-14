@@ -2,7 +2,7 @@ import re
 from termcolor import colored
 from typing import Callable, Dict, Optional, Union, List, Tuple, Any
 
-from autogen import logger
+from .utils import logger
 from autogen.agentchat import Agent, AssistantAgent, UserProxyAgent
 from .datamodel import QueryResults, Query, Document, Chunk
 from .prompts import PROMPT_DEFAULT, PROMPT_CODE, PROMPT_QA
