@@ -23,7 +23,31 @@ class Reranker(ABC):
         Returns:
             A list of tuples, each tuple contains a document and its score.
         """
-        pass
+        raise NotImplementedError
+
+
+class BM25Reranker(Reranker):
+    """
+    A simple BM25 reranker.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def rerank_docs(self, query: Query, docs: List[Document]) -> List[Tuple[Document, float]]:
+        return [(doc, 1.0) for doc in docs]
+
+
+class EmbeddingReranker(Reranker):
+    """
+    An embedding reranker.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def rerank_docs(self, query: Query, docs: List[Document]) -> List[Tuple[Document, float]]:
+        return [(doc, 1.0) for doc in docs]
 
 
 class RerankerFactory:
@@ -33,13 +57,9 @@ class RerankerFactory:
 
     @staticmethod
     def create_reranker(reranker_name: str, **kwargs) -> Reranker:
-        """
-        Create a reranker.
-
-        Args:
-            reranker_name: The name of the reranker.
-
-        Returns:
-            A reranker object.
-        """
-        pass
+        if reranker_name == "bm25":
+            return BM25Reranker(**kwargs)
+        elif reranker_name == "embedding":
+            return EmbeddingReranker(**kwargs)
+        else:
+            raise ValueError(f"Reranker {reranker_name} not found")

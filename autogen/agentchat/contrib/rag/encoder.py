@@ -4,6 +4,14 @@ from .datamodel import Document, Query, QueryResults, Vector, Chunk
 from .utils import lazy_import, logger
 
 
+MsgWarningEmbeddingFunction = (
+    "The embedding function is not an instance of EmbeddingFunction. Please make sure the embedding "
+    "function accepts a string or a list of strings and returns a list of Vectors."
+)
+MsgErrorEmbeddingFunction = "The embedding function is not callable."
+MsgWarningDependentLibrary = "Please install {} to use {}."
+
+
 class EmbeddingFunction(ABC):
     """
     Abstract class for embedding function. An embedding function is responsible for embedding text, images, etc. into vectors.
@@ -34,7 +42,7 @@ class SentenceTransformerEmbeddingFunction(EmbeddingFunction):
         self.model_name = model_name
         self.sentence_transformer = lazy_import("sentence_transformers", "SentenceTransformer")(model_name)
         if not self.sentence_transformer:
-            raise ImportError("Please install sentence_transformers to use SentenceTransformerEmbeddingFunction.")
+            raise ImportError(MsgWarningDependentLibrary.format("sentence_transformers", "SentenceTransformer"))
         self.dimensions = self.sentence_transformer.encode(["hello"]).shape[1]
 
     def __call__(self, inputs: Union[str, List[str]]) -> List[Vector]:
@@ -59,6 +67,7 @@ class Encoder:
             if hasattr(embedding_function, "dimensions")
             else len(embedding_function(["hello"])[0])
         )
+        self._print_embedding_function_warning = True
 
     def encode_chunks(self, chunks: List[Chunk]) -> List[Document]:
         """
@@ -71,12 +80,10 @@ class Encoder:
             A list of Document.
         """
         if not isinstance(self._embedding_function, Callable):
-            raise ValueError("The embedding function is not callable.")
-        if not isinstance(self._embedding_function, EmbeddingFunction):
-            logger.warning(
-                "The embedding function is not an instance of EmbeddingFunction. Please make sure the embedding "
-                "function accepts a string or a list of strings and returns a list of Vectors."
-            )
+            raise ValueError(MsgErrorEmbeddingFunction)
+        if self._print_embedding_function_warning and not isinstance(self._embedding_function, EmbeddingFunction):
+            logger.warning(MsgWarningEmbeddingFunction)
+            self._print_embedding_function_warning = False
         return [
             Document(
                 **chunk.dict(),
@@ -106,6 +113,11 @@ class Encoder:
         Args:
             new_embedding_function: The new embedding function.
         """
+        if not isinstance(new_embedding_function, EmbeddingFunction):
+            logger.warning(MsgWarningEmbeddingFunction)
+        if not isinstance(new_embedding_function, Callable):
+            raise ValueError(MsgErrorEmbeddingFunction)
+
         self._embedding_function = new_embedding_function
         self._model_name = (
             new_embedding_function.model_name
