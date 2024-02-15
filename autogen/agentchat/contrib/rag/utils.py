@@ -40,3 +40,14 @@ def lazy_import(module_name: str, attr_name: str = None):
             return attr
     else:
         return lazy_imported[module_name]
+
+
+def singleton(cls):
+    instances = {}
+
+    def wrapper(*args, **kwargs):
+        if cls not in instances:
+            instances[cls] = cls(*args, **kwargs)
+        return instances[cls]
+
+    return wrapper

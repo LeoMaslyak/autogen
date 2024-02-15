@@ -43,7 +43,12 @@ User's question is: {input_question}
 Context is: {input_context}
 """
 
-PROMPT_REFINE = """Please refine the user's question for BERT-based semantic search embedding, make it more concise while ensuring it captures the essential information. Give me 3 refined versions.
-The raw question is:
-{input_question}
+PROMPT_REFINE = """Please refine the user's question for BERT-based semantic search embedding, make it more concise
+while ensuring it captures the essential information. Give me {n} refined versions.
+The raw question is: {input_question}
+
+Reply in the following format:
+1. {{refined_question_1}}
+2. {{refined_question_2}}
+...
 """
