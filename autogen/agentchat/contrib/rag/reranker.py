@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple
-from datamodel import Document, Query, QueryResults
+from typing import List, Tuple, Optional
+from .datamodel import Document, Query, QueryResults
+from .utils import lazy_import, logger
 
 
 class Reranker(ABC):
@@ -12,7 +13,12 @@ class Reranker(ABC):
         pass
 
     @abstractmethod
-    def rerank_docs(self, query: Query, docs: List[Document]) -> List[Tuple[Document, float]]:
+    def rerank(
+        self,
+        query: Query,
+        docs: Optional[List[Document]] = None,
+        return_docs: bool = False,
+    ) -> List[Tuple[Document, float]]:
         """
         Rerank documents based on the query.
 
@@ -26,28 +32,41 @@ class Reranker(ABC):
         raise NotImplementedError
 
 
-class BM25Reranker(Reranker):
+class TfidfReranker(Reranker):
     """
-    A simple BM25 reranker.
-    """
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def rerank_docs(self, query: Query, docs: List[Document]) -> List[Tuple[Document, float]]:
-        return [(doc, 1.0) for doc in docs]
-
-
-class EmbeddingReranker(Reranker):
-    """
-    An embedding reranker.
+    A simple TFIDF reranker.
     """
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        TfidfVectorizer = lazy_import("sklearn.feature_extraction.text", "TfidfVectorizer")
+        if not TfidfVectorizer:
+            raise ImportError("Please install sklearn to use TfidfReranker.")
+        self.vectorizer = TfidfVectorizer()
+        self.docs_hash = None
+        self.docs = None
 
-    def rerank_docs(self, query: Query, docs: List[Document]) -> List[Tuple[Document, float]]:
-        return [(doc, 1.0) for doc in docs]
+    def vecotrize(self, docs: List[Document]):
+        self.docs = docs
+        self.docs_hash = hash(docs)
+        self.corpus_tfidf = self.vectorizer.fit_transform([doc.title + "\n" + doc.content for doc in docs])
+
+    def rerank(
+        self,
+        query: Query,
+        docs: Optional[List[Document]] = None,
+        return_docs: bool = False,
+    ) -> List[Tuple[Document, float]]:
+        if docs and self.docs_hash != hash(docs):
+            self.vecotrize(docs)
+        if not docs and not self.docs:
+            raise ValueError("Please provide documents to fit the reranker.")
+        query_tfidf = self.vectorizer.transform([query.text])
+        scores = self.corpus_tfidf.dot(query_tfidf.T).toarray().flatten()
+        ranked_docs = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)
+        if return_docs:
+            return [(self.docs[doc[0]], doc[1]) for doc in ranked_docs[: query.k]]
+        else:
+            return ranked_docs[: query.k]
 
 
 class RerankerFactory:
@@ -57,9 +76,7 @@ class RerankerFactory:
 
     @staticmethod
     def create_reranker(reranker_name: str, **kwargs) -> Reranker:
-        if reranker_name == "bm25":
-            return BM25Reranker(**kwargs)
-        elif reranker_name == "embedding":
-            return EmbeddingReranker(**kwargs)
+        if reranker_name == "tfidf":
+            return TfidfReranker(**kwargs)
         else:
             raise ValueError(f"Reranker {reranker_name} not found")
