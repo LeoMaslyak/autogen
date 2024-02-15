@@ -63,7 +63,9 @@ class Query(object):
 
     text: str
     k: int = 10  # The number of similar documents to return.
-    filters: Optional[Dict[str, Any]] = None
+    filter_metadata: Optional[Dict[str, Any]] = None
+    filter_document: Optional[Dict[str, Any]] = None
+    include: Optional[List[str]] = None
 
     def dict(self):
         result = asdict(self)

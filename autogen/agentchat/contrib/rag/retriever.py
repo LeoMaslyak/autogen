@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple
-from datamodel import Document, Query, QueryResults
+from typing import List, Tuple, Dict
+from .datamodel import Document, Query, QueryResults, Vector, Chunk
+from .encoder import Encoder, EmbeddingFunction
+from .vectordb import VectorDB
 
 
 class Retriever(ABC):
@@ -8,7 +10,12 @@ class Retriever(ABC):
     Abstract class for retriever. A retriever is responsible for retrieving documents from the vector database.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        db_type: str,
+        db_config: Dict,
+        encoder: Encoder,
+    ) -> VectorDB:
         pass
 
     @abstractmethod
@@ -21,6 +28,15 @@ class Retriever(ABC):
 
         Returns:
             A query results object.
+        """
+        raise NotImplementedError
+
+    def insert_docs(self, docs: List[Document]) -> None:
+        """
+        Insert documents into the vector database.
+
+        Args:
+            docs: A list of documents.
         """
         pass
 
