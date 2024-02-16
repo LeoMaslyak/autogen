@@ -444,7 +444,6 @@ if __name__ == "__main__":
 
     config_list = autogen.config_list_openai_aoai(KEY_LOC)
     assert len(config_list) >= 3, config_list
-    openai.api_key = os.environ["OPENAI_API_KEY"]
 
     # test_filter()
     # test_chatcompletion()
